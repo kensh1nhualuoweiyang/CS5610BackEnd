@@ -9,7 +9,7 @@ function SongRoutes(app) {
     const searchSong = async (req, res) => {
         const { keyword } = req.query
         const response = await axios.get(SEARCH, {
-            params: { 
+            params: {
                 q: keyword,
                 limit: 100,
             },
@@ -20,17 +20,17 @@ function SongRoutes(app) {
         });
         res.json(response.data)
     }
-    
 
-    const getSongDetail = async (req,res) =>{
-        const {sid} = req.query
+
+    const getSongDetail = async (req, res) => {
+        const { sid } = req.query
         const record = await dao.getSongById(sid)
-        if(record){
+        if (record) {
             res.json(record)
         }
-        else{
+        else {
             const url = TRACK + sid
-            const response = await axios.get(url,{
+            const response = await axios.get(url, {
                 headers: {
                     'X-RapidAPI-Key': KEY,
                     'X-RapidAPI-Host': 'deezerdevs-deezer.p.rapidapi.com'
@@ -40,46 +40,48 @@ function SongRoutes(app) {
                 sid,
                 name: response.data.title,
                 image: response.data.album.cover_xl,
-                artist:response.data.artist.name,
-                preview:response.data.preview,
+                artist: response.data.artist.name,
+                preview: response.data.preview,
             }
             const song = await dao.createSong(songInfo)
             res.json(song)
         }
+
     }
 
-    const updateLikeSong = async (req,res) => {
-        const {like,sid} = req.query
-        const response = await dao.updateLikeSong(like,sid)
-        res.json(response)
+    const updateLikeSong = async (req, res) => {
+        const { like, sid, uid } = req.query
+        await dao.updateLikeSong(like, sid, uid)
+        res.json(200)
     }
 
-    const getComments = async (req,res) =>{
-        const {sid} = req.query
+    const getComments = async (req, res) => {
+        const { sid } = req.query
         const response = await dao.getSongById(sid)
-        await response.populate('comments.user');
+        if (response.comments)
+            await response.populate('comments.user');
         res.json(response.comments)
     }
 
-    const postComment = async (req,res) => {
-        const {sid,comment} = req.query
+    const postComment = async (req, res) => {
+        const { sid, comment } = req.query
         const currentUser = req.session['currentUser']
-        const response = await dao.addComments(sid,currentUser._id,comment.toString())
+        const response = await dao.addComments(sid, currentUser._id, comment.toString())
         res.json(response)
     }
 
-    const deleteComment= async (req,res) => {
-        const {sid,comment,uid} = req.query
-        const response = await dao.deleteComments(sid,uid,comment)
+    const deleteComment = async (req, res) => {
+        const { sid, commentId } = req.query
+        const response = await dao.deleteComments(sid, commentId)
         res.json(response)
-    }   
+    }
 
-    app.put("/api/songLikes",updateLikeSong)
+    app.put("/api/songLikes", updateLikeSong)
     app.get("/api/songDetail", getSongDetail)
     app.get("/api/songs", searchSong)
-    app.get("/api/comments",getComments)
-    app.post("/api/comments",postComment)
-    app.delete("/api/comments",deleteComment)
+    app.get("/api/comments", getComments)
+    app.post("/api/comments", postComment)
+    app.delete("/api/comments", deleteComment)
 }
 
 export default SongRoutes

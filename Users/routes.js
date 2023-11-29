@@ -1,39 +1,39 @@
 
 import * as dao from "./dao.js"
-function UserRoutes(app){
-    
+function UserRoutes(app) {
 
-    const getUser = async (req,res) =>{
-        if(req.session['currentUser']){
+
+    const getUser = async (req, res) => {
+        if (req.session['currentUser']) {
             res.json(req.session['currentUser'])
         }
-        else{
+        else {
             return null;
         }
     }
 
-    const register = async(req,res) =>{
-            const exist = await dao.findByUserName(req.body.userName)
-            if(exist.length > 0){
-                res.status(400).json({message:"Duplicate Username Found, Please Try Again"})
-            }
-            else{
-                const response = await dao.createUser(req.body)
-                res.json(response) 
-            }
+    const register = async (req, res) => {
+        const exist = await dao.findByUserName(req.body.userName)
+        if (exist.length > 0) {
+            res.status(400).json({ message: "Duplicate Username Found, Please Try Again" })
+        }
+        else {
+            const response = await dao.createUser(req.body)
+            res.json(response)
+        }
     }
 
-    const login = async(req,res) =>{
-        const {userName, password} = req.body
-        const currUser = await dao.findByCredential(userName,password)
-        if(currUser){
+    const login = async (req, res) => {
+        const { userName, password } = req.body
+        const currUser = await dao.findByCredential(userName, password)
+        if (currUser) {
             req.session['currentUser'] = currUser
             res.json(currUser)
         }
-        else{
-            res.status(401).json({message:"Invalid Credential"})
+        else {
+            res.status(401).json({ message: "Invalid Credential" })
         }
-       
+
     }
 
     const logOut = async (req, res) => {
@@ -42,39 +42,102 @@ function UserRoutes(app){
     }
 
     const search = async (req, res) => {
-        const {keyword} = req.query
+        const { keyword } = req.query
         const users = await dao.findByUserName(keyword, { projection: { username: 1, _id: 1 } });
         res.json(users);
     };
 
-    const getUserInfo = async (req,res) =>{
-        const {uid} = req.query
+    const getUserInfo = async (req, res) => {
+        const { uid } = req.query
         const user = await dao.findByID(uid)
         res.json(user)
     }
-    
-    const getLikesSong = async (req,res) =>{
-        const {uid} = req.query
-        const response = await dao.findByID(uid)
-        res.json(response.likedSong)
+
+    const getPlaylistByUser = async (req, res) => {
+        const { uid } = req.query
+        const userId = uid === "undefined" ? req.session['currentUser']._id : uid;
+        const user = await dao.findByID(userId)
+        if (user.myPlaylist.length > 0)
+            await user.populate('myPlaylist');
+        res.json(user.myPlaylist);
     }
 
-    const handleLikeSong = async (req,res) =>{
-        const {like,sid,uid} = req.query
-        await dao.updateLikeSong(like,uid,sid)
-        const response = await dao.findByID(uid)
-
-        res.json(response.likedSong)
+    const getLikedPlaylistByUser = async (req, res) => {
+        const { uid } = req.query
+        const userId = uid === "undefined" ? req.session['currentUser']._id : uid;
+        const user = await dao.findByID(userId)
+        if (user.myPlaylist.length > 0)
+            await user.populate('likedPlaylist');
+        res.json(user.likedPlaylist);
     }
 
-    app.put(`/api/songs`,handleLikeSong)
-    app.get(`/api/likesSong`,getLikesSong)
-    app.post(`/api/userInfo`,getUserInfo)
-    app.post("/api/currUser",getUser)
-    app.post("/api/register",register)
-    app.post("/api/login",login)
-    app.post("/api/logOut",logOut)
-    app.get("/api/user",search)
+    const getLikedSongByUser = async (req, res) => {
+
+        const { uid } = req.query
+        const userId = uid === "undefined" ? (req.session['currentUser'] ? req.session['currentUser']._id : uid) : uid;
+        if (userId === "undefined") {
+            res.json([])
+        }
+        else {
+            const user = await dao.findByID(userId)
+            if (user.likedSong.length > 0)
+                await user.populate('likedSong');
+            res.json(user.likedSong);
+        }
+
+
+    }
+
+    const fetchFollower = async (req, res) => {
+        const { uid } = req.query;
+        const user = await dao.findByID(uid);
+        if (user.followers.length > 0) {
+            await user.populate({
+                path: "followers",
+                select: { userName: 1, _id: 1 }
+            });
+
+            res.json(user.followers);
+        } else {
+            res.json([]);
+        }
+    };
+
+    const fetchFollowing = async (req, res) => {
+        const { uid } = req.query
+        const user = await dao.findByID(uid)
+        if (user.followings.length > 0) {
+            await user.populate({
+                path: "followings",
+                select: { userName: 1, _id: 1 }
+            })
+            res.json(user.followings)
+        }
+        else {
+            res.json([])
+        }
+    }
+
+    const updateFollows = async (req, res) => {
+        const { follow, id } = req.query
+        const uid = req.session['currentUser']._id
+        await dao.updateFollows(follow, uid, id)
+        res.json(200)
+    }
+
+    app.put(`/api/followers`, updateFollows)
+    app.get(`/api/follower`, fetchFollower)
+    app.get(`/api/following`, fetchFollowing)
+    app.get(`/api/likedSong`, getLikedSongByUser)
+    app.get(`/api/likedPlaylist`, getLikedPlaylistByUser)
+    app.get(`/api/userPlaylist`, getPlaylistByUser)
+    app.post(`/api/userInfo`, getUserInfo)
+    app.post("/api/currUser", getUser)
+    app.post("/api/register", register)
+    app.post("/api/login", login)
+    app.post("/api/logOut", logOut)
+    app.get("/api/user", search)
+
 }
 
 export default UserRoutes

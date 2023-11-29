@@ -1,44 +1,44 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
-    userName: {type: String, required:true, unique:true},
-    password: {type: String, required:true},
+    userName: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
     email: String,
-    role:{
+    role: {
         type: String,
-        enum: ["User","Creator","Admin"],
+        enum: ["User", "Creator", "Admin"],
         default: "User"
     },
     followers: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
+            ref: 'Users'
         }
     ],
-    following: [
+    followings: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
+            ref: 'Users'
         }
     ],
-    likedSong:[
+    likedSong: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Songs'
         }
     ],
-    likedPlaylist:[
+    likedPlaylist: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Playlist'
         }
     ],
-    myPlaylist:[
+    myPlaylist: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Playlist'
         }
     ]
-},{collection:"Users"})
+}, { collection: "Users" })
 
 export default userSchema
