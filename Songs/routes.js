@@ -65,14 +65,24 @@ function SongRoutes(app) {
 
     const postComment = async (req, res) => {
         const { sid, comment } = req.query
-        const currentUser = req.session['currentUser']
-        const response = await dao.addComments(sid, currentUser._id, comment.toString())
-        res.json(response)
+        if (comment.length == 0)
+            res.status(400).json({ message: "Comment Cannot Be Empty" })
+        else {
+            const currentUser = req.session['currentUser']
+            const response = await dao.addComments(sid, currentUser._id, comment.toString())
+            res.json(response)
+        }
+
     }
 
     const deleteComment = async (req, res) => {
         const { sid, commentId } = req.query
         const response = await dao.deleteComments(sid, commentId)
+        res.json(response)
+    }
+
+    const fetchSongRec = async (req, res) => {
+        const response = await dao.getSongRec()
         res.json(response)
     }
 
@@ -82,6 +92,7 @@ function SongRoutes(app) {
     app.get("/api/comments", getComments)
     app.post("/api/comments", postComment)
     app.delete("/api/comments", deleteComment)
+    app.get(`/api/songRec`, fetchSongRec)
 }
 
 export default SongRoutes

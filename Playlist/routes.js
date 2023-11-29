@@ -37,39 +37,63 @@ function PlayListRoute(app) {
     }
 
     const fetchPlaylist = async (req, res) => {
-        try {
-            const { pid } = req.query
-            const response = await dao.getPlayList(pid)
-            await response.populate({
-                path: "author",
-                select: { userName: 1, _id: 1 }
-            })
+        const { pid } = req.query
+        const response = await dao.getPlayList(pid)
+        await response.populate({
+            path: "author",
+            select: { userName: 1, _id: 1 }
+        })
 
-            if (response.Songs.length > 0) {
-                const newSongs = await Promise.all(response.Songs.map(async (item) => {
-                    return (await songModel.findOne({ sid: item })).toJSON()
-                }));
-                let newObj = {
-                    ...response._doc,
-                    newSongs
-                }
-                res.json(newObj)
+        if (response.Songs.length > 0) {
+            const newSongs = await Promise.all(response.Songs.map(async (item) => {
+                return (await songModel.findOne({ sid: item })).toJSON()
+            }));
+            let newObj = {
+                ...response._doc,
+                newSongs
             }
-            else {
-                res.json(response)
-            }
-
-
+            res.json(newObj)
         }
-        catch (err) {
-            console.log("111");
+        else {
+            res.json(response)
         }
     }
 
+    const updatePlaylistLike = async (req, res) => {
+        const {like,pid} = req.query
+        const uid = req.session['currentUser']._id
+        await dao.updatePlaylistLike(like,pid,uid)
+        res.json(200)
+    }
+
+    const fetchPlaylistResult = async (req, res) => {
+        const { keyword } = req.query;
+        const response = await dao.findByPlaylistName(keyword);
+
+        await Promise.all(
+            response.map(async (playlist) => {
+                await playlist.populate({
+                    path: "author",
+                    select: { userName: 1, _id: 1 },
+                });
+            })
+        );
+    
+        res.json(response);
+    };
+    
+    const fetchPlaylistRec = async (req,res) => {
+        const response = await dao.fetchPlaylistRec()
+        res.json(response)
+    }
+
+    app.get(`/api/playlistResult`,fetchPlaylistResult)
     app.get(`/api/playlist`, fetchPlaylist)
     app.delete(`/api/playlist`, deletePlayList)
     app.put(`/api/AddToPlaylist`, addToPlaylist)
     app.post(`/api/playlist`, createPlayList)
+    app.put(`/api/playlist`, updatePlaylistLike)
+    app.get(`/api/playlistRec`,fetchPlaylistRec)
 }
 
 export default PlayListRoute

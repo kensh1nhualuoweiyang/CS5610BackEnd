@@ -40,3 +40,8 @@ export const updateLikeSong = async (like, id,uid) => {
             }
         })
 }
+
+export const getSongRec = async () =>{
+    return await songModel.find().sort({likes:-1}).limit(27)
+    
+}

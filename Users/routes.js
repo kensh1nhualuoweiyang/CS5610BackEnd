@@ -64,11 +64,17 @@ function UserRoutes(app) {
 
     const getLikedPlaylistByUser = async (req, res) => {
         const { uid } = req.query
-        const userId = uid === "undefined" ? req.session['currentUser']._id : uid;
-        const user = await dao.findByID(userId)
-        if (user.myPlaylist.length > 0)
-            await user.populate('likedPlaylist');
-        res.json(user.likedPlaylist);
+        const userId = uid === "undefined" ? (req.session['currentUser'] ? req.session['currentUser']._id : uid) : uid;
+        if (userId === "undefined") {
+            res.json([])
+        }
+        else{
+            const user = await dao.findByID(userId)
+            if (user.myPlaylist.length > 0)
+                await user.populate('likedPlaylist');
+            res.json(user.likedPlaylist);
+        }
+       
     }
 
     const getLikedSongByUser = async (req, res) => {
