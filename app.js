@@ -7,6 +7,7 @@ import "dotenv/config";
 import SongRoutes from "./Songs/routes.js";
 import PlayListRoute from "./Playlist/routes.js";
 import ReportRoutes from "./Reports/routes.js";
+import RequestRoutes from "./Requests/routes.js";
 
 const DB_CONNECTION = process.env.DB_CONNECTION || 'mongodb://127.0.0.1:27017/WebApp'
 mongoose.connect(DB_CONNECTION)
@@ -32,6 +33,7 @@ if (process.env.NODE_ENV !== "development") {
 app.use(session(sessionOption))
 app.use(express.json())
 SongRoutes(app)
+RequestRoutes(app)
 UserRoutes(app)
 ReportRoutes(app)
 PlayListRoute(app)

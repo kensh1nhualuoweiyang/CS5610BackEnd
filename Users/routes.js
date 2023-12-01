@@ -8,7 +8,7 @@ function UserRoutes(app) {
             res.json(req.session['currentUser'])
         }
         else {
-            return null;
+            res.json(null);
         }
     }
 
@@ -68,13 +68,13 @@ function UserRoutes(app) {
         if (userId === "undefined") {
             res.json([])
         }
-        else{
+        else {
             const user = await dao.findByID(userId)
             if (user.myPlaylist.length > 0)
                 await user.populate('likedPlaylist');
             res.json(user.likedPlaylist);
         }
-       
+
     }
 
     const getLikedSongByUser = async (req, res) => {
@@ -131,6 +131,27 @@ function UserRoutes(app) {
         res.json(200)
     }
 
+    const updateProfile = async (req, res) => {
+        const item = req.body
+        if (item.userName.length == 0 || item.password.length == 0
+            || item.email.length == 0) {
+            res.status(400).json({ message: "Field Cannot be empty" })
+        }
+        else {
+            const exist = await dao.findByUserName(item.userName)
+            if (exist.length > 0 && !exist.some((user) => user._id.toString() === item._id.toString())) {  
+                res.status(400).json({ message: "Duplicate Username Found" })
+            }
+            else {
+                await dao.updateProfile(item._id, item)
+                res.json(200)
+            }
+        }
+    }
+
+    
+
+    app.put(`/api/updateProfile`, updateProfile)
     app.put(`/api/followers`, updateFollows)
     app.get(`/api/follower`, fetchFollower)
     app.get(`/api/following`, fetchFollowing)
