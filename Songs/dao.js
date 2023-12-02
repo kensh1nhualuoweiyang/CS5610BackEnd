@@ -29,11 +29,11 @@ export const updateLikeSong = async (like, id,uid) => {
     const incre = like === "true"
     const value = incre ? 1 : -1
 
-    await songModel.updateOne({ sid: id },
+    await songModel.updateOne({ _id: id },
         {
             $inc: { likes: value }
         })
-    await userModel.updateOne({sid:uid},
+    await userModel.updateOne({_id:uid},
         {
             [value==1? "$push":"$pull"]:{
                 likedSong: id  
